@@ -10,13 +10,7 @@ def get_redis() -> redis.Redis:
     global _redis_instance
     if _redis_instance is None:
         settings = get_settings()
-        _redis_instance = redis.Redis(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            db=settings.REDIS_DB,
-            password=settings.REDIS_PASSWORD if settings.REDIS_PASSWORD else None,
-            decode_responses=True
-        )
+        _redis_instance = redis.from_url(settings.REDIS_URL, decode_responses=True)
     return _redis_instance
 
 

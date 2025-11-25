@@ -1,4 +1,3 @@
-import urllib.parse
 from functools import lru_cache
 from pydantic_settings import BaseSettings
 
@@ -6,18 +5,11 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     """애플리케이션 전체 설정"""
 
-    # MySQL Database Settings (필수)
-    MYSQL_HOST: str
-    MYSQL_PORT: int
-    MYSQL_USER: str
-    MYSQL_PASSWORD: str
-    MYSQL_DATABASE: str
+    # Database URL (필수)
+    DATABASE_URL: str
 
-    # Redis Settings (필수)
-    REDIS_HOST: str
-    REDIS_PORT: int
-    REDIS_DB: int
-    REDIS_PASSWORD: str
+    # Redis URL (필수)
+    REDIS_URL: str
 
     # Google OAuth (필수)
     GOOGLE_CLIENT_ID: str
@@ -33,12 +25,10 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        """MySQL 연결 URL 생성"""
-        password = urllib.parse.quote_plus(self.MYSQL_PASSWORD)
-        return (
-            f"mysql+pymysql://{self.MYSQL_USER}:{password}"
-            f"@{self.MYSQL_HOST}:{self.MYSQL_PORT}/{self.MYSQL_DATABASE}"
-        )
+        """SQLAlchemy용 URL 반환 (mysql:// -> mysql+pymysql://)"""
+        if self.DATABASE_URL.startswith("mysql://"):
+            return self.DATABASE_URL.replace("mysql://", "mysql+pymysql://", 1)
+        return self.DATABASE_URL
 
 
 @lru_cache()

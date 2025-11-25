@@ -1,3 +1,5 @@
+attrs
+requests
 fastapi
 uvicorn
 python-dotenv

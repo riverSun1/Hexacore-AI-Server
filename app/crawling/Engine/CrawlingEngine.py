@@ -12,7 +12,7 @@ from app.post_analysis.infrastructure.service.openai_service_impl import OpenAIS
 class Article:
     title: str
     content: str
-    anlysis: str
+    url: str
 
 
 class CrawlingEngine:
@@ -82,7 +82,7 @@ class CrawlingEngine:
             print(f"본문: {content[:200]}...")
 
 
-            articles.append(Article(title=title, content=content, anlysis=link))
+            articles.append(Article(title=title, content=content, url=link))
 
         return articles
 

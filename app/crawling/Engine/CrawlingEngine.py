@@ -1,10 +1,11 @@
 import re
-from dataclasses import dataclass
-from typing import List, Optional
+from dataclasses import dataclass, field
+from typing import List, Optional, Dict, Any
 import asyncio
 import requests
 from bs4 import BeautifulSoup
 
+from app.crawling.Engine.prompts import STRICT_JSON_PROMPT
 from app.post_analysis.infrastructure.service.openai_service_impl import OpenAIServiceImpl
 
 
@@ -12,7 +13,8 @@ from app.post_analysis.infrastructure.service.openai_service_impl import OpenAIS
 class Article:
     title: str
     content: str
-    url: str
+    url: str = ""
+    analysis: Optional[Dict[str, Any]] = None
 
 
 class CrawlingEngine:
@@ -91,7 +93,8 @@ class CrawlingEngine:
         articles=self.crawl_pages()
         return_articles = []
         for article in articles:
-            analysis = await self.OAS.analyze_stock_post(article.content)
+            # 엄격한 JSON 형식 프롬프트로 게시글 분석 (prompts.py에서 다른 프롬프트 선택 가능)
+            analysis = await self.OAS.analyze_stock_post(article.content, prompt_template=STRICT_JSON_PROMPT)
 
             print(f"분석: {type(analysis)}")
             print(f"분석: {(analysis)}")

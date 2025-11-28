@@ -1,4 +1,5 @@
 from typing import List
+from datetime import datetime
 
 import json
 from sqlalchemy import desc
@@ -49,10 +50,22 @@ class DataRepositoryImpl(DataRepositoryPort):
                     if name:
                         resolved_keywords.append(name)
 
+            # published_at을 문자열로 변환 (datetime이면 ISO 형식으로)
+            # published_at이 필수 필드이므로, NULL인 경우 빈 문자열로 처리
+            if row.published_at:
+                if isinstance(row.published_at, datetime):
+                    published_at_str = row.published_at.isoformat()
+                else:
+                    published_at_str = str(row.published_at)
+            else:
+                # DB에 published_at이 NULL인 경우 기본값 제공
+                published_at_str = ""
+
             data = Data(
                 title=row.title,
                 content=row.content,
                 keywords=resolved_keywords,
+                published_at=published_at_str,
             )
             data.id = row.id
             results.append(data)
@@ -72,10 +85,27 @@ class DataRepositoryImpl(DataRepositoryPort):
 
         keywords_json = json.dumps(keyword_ids, ensure_ascii=False)
 
+        # published_at 문자열을 datetime으로 변환
+        published_at_dt = None
+        if data.published_at:
+            try:
+                if isinstance(data.published_at, datetime):
+                    published_at_dt = data.published_at
+                elif isinstance(data.published_at, str):
+                    # ISO 형식 문자열을 datetime으로 파싱
+                    # 'Z'를 '+00:00'으로 변환
+                    date_str = data.published_at.replace('Z', '+00:00')
+                    # fromisoformat은 Python 3.7+에서 사용 가능
+                    published_at_dt = datetime.fromisoformat(date_str)
+            except (ValueError, AttributeError, TypeError):
+                # 파싱 실패 시 None으로 저장
+                published_at_dt = None
+
         orm_data = DataORM(
             title=data.title,
             content=data.content,
             keywords=keywords_json,
+            published_at=published_at_dt,
         )
         self.db.add(orm_data)
         self.db.flush()  # ID를 얻기 위해 flush

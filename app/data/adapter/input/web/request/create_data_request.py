@@ -10,6 +10,7 @@ class CreateDataItemRequest(BaseModel):
     title: str = Field(..., description="제목")
     content: str = Field(..., description="내용")
     keywords: List[str] = Field(default_factory=list, description="키워드 목록")
+    published_at: Optional[str] = Field(None, description="발행일시 (ISO 형식 문자열)")
 
 
 class CreateDataListRequest(BaseModel):
@@ -22,6 +23,7 @@ class CrawlingAnalysisPayload(BaseModel):
     title: str = Field(..., description="분석된 투자 포인트 제목")
     content: str = Field(..., description="분석된 투자 포인트 내용")
     keywords: List[str] = Field(default_factory=list, description="연관 키워드")
+    published_at: Optional[str] = Field(None, description="발행일시 (ISO 형식 문자열)")
 
 
 class CrawlingArticleRequest(BaseModel):

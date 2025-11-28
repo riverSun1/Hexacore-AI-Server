@@ -66,7 +66,14 @@ class CrawlingEngine:
         else:
             content = ""
 
-        published_at = soup.select_one("span.time")["data-date-format"]
+        # published_at 파싱 (에러 핸들링)
+        published_at = ""
+        try:
+            time_span = soup.select_one("span.time")
+            if time_span and time_span.get("data-date-format"):
+                published_at = time_span["data-date-format"]
+        except (AttributeError, KeyError, TypeError):
+            published_at = ""
 
         return title, content, published_at
 
@@ -104,9 +111,13 @@ class CrawlingEngine:
 
         for article in articles:
             # 엄격한 JSON 형식 프롬프트로 게시글 분석 (prompts.py에서 다른 프롬프트 선택 가능)
-            analysis = await self.OAS.analyze_stock_post2(article.content, prompt_template=CRAWLING_JSON_PROMPT)
-            return_articles.append(Data(title=analysis.get("title"), content=analysis.get("content")
-                                        , keywords=analysis.get("keywords"),published_at=article.published_at))
+            analysis = await self.OAS.analyze_stock_post(article.content, prompt_template=CRAWLING_JSON_PROMPT)
+            return_articles.append(Data(
+                title=analysis.get("title"),
+                content=analysis.get("content"),
+                keywords=analysis.get("keywords"),
+                published_at=article.published_at
+            ))
 
         return return_articles
 

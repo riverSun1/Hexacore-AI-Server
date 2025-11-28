@@ -22,12 +22,18 @@ class CreateDataList:
         created_data_list: List[Data] = []
 
         for item in items:
+            # published_at이 필수 필드이므로, 없으면 빈 문자열로 처리
+            published_at = item.get("published_at", "")
+            if not published_at:
+                published_at = ""
+            
             data = Data(
                 title=item["title"],
                 content=item["content"],
                 keywords=[
                     k.strip() for k in item.get("keywords", []) if k and k.strip()
                 ],
+                published_at=published_at,
             )
             saved_data = self.data_repository.save(data)
             created_data_list.append(saved_data)

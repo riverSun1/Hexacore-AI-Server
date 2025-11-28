@@ -39,6 +39,7 @@ def _create_data_items(items: list[dict], db: Session) -> list[DataResponse]:
                     title=data.title,
                     content=data.content,
                     keywords=data.keywords,
+                    published_at=data.published_at,
                 )
             )
 
@@ -68,13 +69,14 @@ def get_data(limit: int = 20, db: Session = Depends(get_db)):
             title=data.title,
             content=data.content,
             keywords=data.keywords,
+            published_at=data.published_at,
         )
         for data in data_list
     ]
 @data_router.post("/dailylist", response_model=List[DataResponse])
 async def daily_listup(limit: int = 20, db: Session = Depends(get_db)):
     """
-    최근 데이터 목록 조회
+    크롤링 데이터를 수집하여 DB에 저장
     """
     keyword_repository = KeywordRepositoryImpl(db)
     data_repository = DataRepositoryImpl(db, keyword_repository)
@@ -82,9 +84,31 @@ async def daily_listup(limit: int = 20, db: Session = Depends(get_db)):
     use_case = CreateDataList(data_repository)
     engine = CrawlingEngine()
     items = await engine.article_analysis(page_count=5)
+    
+    # Data 객체를 dict로 변환
+    items = [
+        {
+            "title": item.title,
+            "content": item.content,
+            "keywords": item.keywords,
+            "published_at": item.published_at,
+        }
+        for item in items
+    ]
     created_data_list = use_case.execute(items)
 
     db.commit()
+
+    return [
+        DataResponse(
+            id=data.id,
+            title=data.title,
+            content=data.content,
+            keywords=data.keywords,
+            published_at=data.published_at,
+        )
+        for data in created_data_list
+    ]
 
 
 # TODO: /data/top-keywords, /data/keywords 등 통계용 엔드포인트는
@@ -116,11 +140,17 @@ def create_data_from_crawling(
         if not title or not content:
             continue
 
+        # published_at이 필수 필드이므로, 없으면 빈 문자열로 처리
+        published_at = ""
+        if hasattr(analysis, 'published_at') and analysis.published_at:
+            published_at = analysis.published_at
+        
         items_to_save.append(
             {
                 "title": title,
                 "content": content,
                 "keywords": keywords,
+                "published_at": published_at,
             }
         )
 

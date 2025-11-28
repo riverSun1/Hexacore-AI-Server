@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -12,3 +12,4 @@ class DataResponse(BaseModel):
     title: str
     content: str
     keywords: List[str]
+    published_at: Optional[str] = None

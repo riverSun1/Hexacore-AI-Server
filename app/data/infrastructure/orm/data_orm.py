@@ -10,6 +10,6 @@ class DataORM(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(255), nullable=False)
     content = Column(Text, nullable=False)
-    keywords = Column(Text, nullable=True)  # JSON 문자열로 키워드 목록 저장
+    # keywords = Column(Text, nullable=True)  # JSON 문자열로 키워드 목록 저장
     published_at = Column(DateTime, nullable=True)  # 발행일시
 

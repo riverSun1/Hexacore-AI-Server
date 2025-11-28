@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -75,30 +76,49 @@ def get_data(limit: int = 20, db: Session = Depends(get_db)):
     ]
 @data_router.post("/dailylist", response_model=List[DataResponse])
 async def daily_listup(limit: int = 20, db: Session = Depends(get_db)):
-    """
-    크롤링 데이터를 수집하여 DB에 저장
-    """
+
     keyword_repository = KeywordRepositoryImpl(db)
     data_repository = DataRepositoryImpl(db, keyword_repository)
 
     use_case = CreateDataList(data_repository)
     engine = CrawlingEngine()
-    items = await engine.article_analysis(page_count=5)
-    
-    # Data 객체를 dict로 변환
-    items = [
-        {
-            "title": item.title,
-            "content": item.content,
-            "keywords": item.keywords,
-            "published_at": item.published_at,
-        }
-        for item in items
-    ]
-    created_data_list = use_case.execute(items)
 
+    # 1) DB에서 가장 최신 published_at 가져오기
+    recent = data_repository.get_recent(limit=limit)
+    latest_date = None
+
+    if recent:
+        published_str = recent[0].published_at
+        if published_str:
+            try:
+                latest_date = datetime.fromisoformat(published_str)
+            except ValueError:
+                latest_date = None  # 혹시 잘못된 포맷이면 비교 못 하므로 무시
+
+    # 2) 크롤링 실행
+    items = await engine.article_analysis(page_count=5)
+
+    # 3) 최신 데이터만 필터링
+    filtered_items = []
+    for item in items:
+        # item.published_at 은 datetime 형식이어야 비교 가능
+        if latest_date is None or item.published_at > latest_date:
+            filtered_items.append({
+                "title": item.title,
+                "content": item.content,
+                "keywords": item.keywords,
+                "published_at": item.published_at,
+            })
+
+    # 4) 저장할 데이터 없으면 바로 반환
+    if not filtered_items:
+        return []
+
+    # 5) DB 저장
+    created_data_list = use_case.execute(filtered_items) #주석 살리면 filtered_items 로 변환
     db.commit()
 
+    # 6) 저장된 결과 리턴
     return [
         DataResponse(
             id=data.id,
